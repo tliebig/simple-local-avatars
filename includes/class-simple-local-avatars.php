@@ -22,7 +22,7 @@ class Simple_Local_Avatars {
 	protected $avatar_ratings;
 
 	/**
-	 * Set up the hooks and default values
+	 * Initialize the class and call necessary setup methods.
 	 */
 	public function __construct() {
 		//load_plugin_textdomain( 'simple-local-avatars', false, dirname( plugin_basename( __FILE__ ) ) . '/localization/' );
@@ -31,7 +31,7 @@ class Simple_Local_Avatars {
 			'G'  => __( 'G &#8212; Suitable for all audiences' ),
 			'PG' => __( 'PG &#8212; Possibly offensive, usually for audiences 13 and above' ),
 			'R'  => __( 'R &#8212; Intended for adult audiences above 17' ),
-			'X'  => __( 'X &#8212; Even more mature than above' )
+			'X'  => __( 'X &#8212; Even more mature than above' ),
 		);
 
 		$this->add_hooks();
@@ -69,6 +69,7 @@ class Simple_Local_Avatars {
 		add_action( 'user_edit_form_tag', array( $this, 'user_edit_form_tag' ) );
 
 		add_filter( 'avatar_defaults', array( $this, 'avatar_defaults' ) );
+
 		if ( $this->get_setting( 'only', false ) ) {
 			add_filter( 'get_avatar', array( $this, 'get_avatar' ), 10, 5 );
 		}
@@ -77,12 +78,15 @@ class Simple_Local_Avatars {
 	/**
 	 * Retrieve the local avatar for a user who provided a user ID or email address.
 	 *
-	 * @param string $avatar Avatar return by original function
-	 * @param int|string|object $id_or_email A user ID,  email address, or comment object
-	 * @param int $size Size of the avatar image
-	 * @param string $default URL to a default image to use if no avatar is available
-	 * @param string $alt Alternative text to use in image tag. Defaults to blank
-	 * @return string <img> tag for the user's avatar
+	 * @param string            $avatar      Avatar returned by the original function.
+	 * @param int|string|object $id_or_email A user ID, email address, or comment object.
+	 * @param int               $size        Optional. Size of the avatar image (height and width, in
+	 *                                       pixels). Default is 96.
+	 * @param string            $default     Optional. URL to a default image to use if no avatar is
+	 *                                       available. Default is an empty string.
+	 * @param string            $alt         Optional. Alternative text to use in image tag. Defaults
+	 *                                       is an empty string.
+	 * @return string An <img> element for the user's avatar.
 	 */
 	public function get_avatar( $avatar = '', $id_or_email, $size = 96, $default = '', $alt = '' ) {
 		if ( is_numeric( $id_or_email ) )
@@ -168,9 +172,7 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Initialization within the WordPress admin area.
-	 *
-	 * Responsible for registering the settings and converting.
+	 * Register settings within the WP admin area.
 	 */
 	public function admin_init() {
 		$this->upgrade_pre_2_0();
@@ -200,7 +202,7 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Add scripts to the profile editing page
+	 * Add scripts to the profile editing page.
 	 *
 	 * @param string $hook_suffix Page hook
 	 */
@@ -240,9 +242,9 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Settings field for avatar upload capabilities
+	 * Settings field for avatar upload capabilities.
 	 *
-	 * @param array $args Field arguments
+	 * @param array $args Field arguments.
 	 */
 	public function avatar_settings_field( $args ) {
 		$args = wp_parse_args( $args, array(
@@ -334,14 +336,14 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Ensure that the profile form has proper encoding type
+	 * Ensure that the profile form has proper encoding type.
 	 */
 	public function user_edit_form_tag() {
 		echo 'enctype="multipart/form-data"';
 	}
 
 	/**
-	 * Saves avatar image to a user
+	 * Saves avatar image to a user.
 	 *
 	 * @param int|string $url_or_media_id Local URL for avatar or ID of attachment
 	 * @param int $user_id ID of user to assign image to
