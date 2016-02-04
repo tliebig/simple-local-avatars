@@ -87,4 +87,26 @@ class SimpleLocalAvatarsTest extends TestCase {
 		), $instance->sanitize_options( array() ) );
 	}
 
+	public function test_upgrade_pre_2_0() {
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
+
+		M::wpFunction( 'get_option', array(
+			'times'  => 1,
+			'args'   => array( 'simple_local_avatars_caps' ),
+			'return' => array( 'simple_local_avatar_caps' => true ),
+		) );
+
+		M::wpFunction( 'update_option', array(
+			'times'  => 1,
+			'args'   => array( 'simple_local_avatars', array( 'caps' => 1 ) ),
+		) );
+
+		M::wpFunction( 'delete_option', array(
+			'times'  => 1,
+			'args'   => array( 'simple_local_avatars_caps' ),
+		) );
+
+		$instance->upgrade_pre_2_0();
+	}
+
 }

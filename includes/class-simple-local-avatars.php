@@ -167,18 +167,36 @@ class Simple_Local_Avatars {
 		return apply_filters( 'simple_local_avatar', $avatar );
 	}
 
+	/**
+	 * Initialization within the WordPress admin area.
+	 *
+	 * Responsible for registering the settings and converting.
+	 */
 	public function admin_init() {
-		// upgrade pre 2.0 option
-		if ( $old_ops = get_option( 'simple_local_avatars_caps' ) ) {
-			if ( ! empty( $old_ops['simple_local_avatars_caps'] ) )
-				update_option( 'simple_local_avatars', array( 'caps' => 1 ) );
-
-			delete_option( 'simple_local_avatar_caps' );
-		}
+		$this->upgrade_pre_2_0();
 
 		register_setting( 'discussion', 'simple_local_avatars', array( $this, 'sanitize_options' ) );
-		add_settings_field( 'simple-local-avatars-only', __('Local Avatars Only','simple-local-avatars'), array( $this, 'avatar_settings_field' ), 'discussion', 'avatars', array( 'key' => 'only', 'desc' => 'Only allow local avatars (still uses Gravatar for default avatars)' ) );
-		add_settings_field( 'simple-local-avatars-caps', __('Local Upload Permissions','simple-local-avatars'), array( $this, 'avatar_settings_field' ), 'discussion', 'avatars', array( 'key' => 'caps', 'desc' => 'Only allow users with file upload capabilities to upload local avatars (Authors and above)' ) );
+		add_settings_field(
+			'simple-local-avatars-only',
+			__('Local Avatars Only','simple-local-avatars'),
+			array( $this, 'avatar_settings_field' ),
+			'discussion',
+			'avatars',
+			array(
+				'key' => 'only',
+				'desc' => 'Only allow local avatars (still uses Gravatar for default avatars)'
+			)
+		);
+		add_settings_field(
+			'simple-local-avatars-caps',
+			__('Local Upload Permissions','simple-local-avatars'),
+			array( $this, 'avatar_settings_field' ),
+			'discussion', 'avatars',
+			array(
+				'key' => 'caps',
+				'desc' => 'Only allow users with file upload capabilities to upload local avatars (Authors and above)',
+			)
+		);
 	}
 
 	/**
@@ -529,5 +547,22 @@ class Simple_Local_Avatars {
 	 */
 	public function user_profile_update_errors( WP_Error $errors ) {
 		$errors->add( 'avatar_error', $this->avatar_upload_error );
+	}
+
+	/**
+	 * Upgrade installations running < 2.0.
+	 */
+	public function upgrade_pre_2_0() {
+		$options = get_option( 'simple_local_avatars_caps' );
+
+		if ( ! $options ) {
+			return;
+		}
+
+		if ( ! empty( $options['simple_local_avatar_caps'] ) ) {
+			update_option( 'simple_local_avatars', array( 'caps' => 1 ) );
+		}
+
+		delete_option( 'simple_local_avatars_caps' );
 	}
 }
