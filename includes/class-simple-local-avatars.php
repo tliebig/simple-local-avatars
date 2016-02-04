@@ -321,26 +321,28 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Saves avatar image to a user.
+	 * Save a new avatar to a user.
 	 *
-	 * @param int|string $url_or_media_id Local URL for avatar or ID of attachment
-	 * @param int $user_id ID of user to assign image to
+	 * @param int|string $url_or_media_id Local URL for avatar or ID of attachment.
+	 * @param int        $user_id         The ID of the user this avatar should be attached to.
 	 */
 	protected function assign_new_user_avatar( $url_or_media_id, $user_id ) {
-		// delete the old avatar
-		$this->avatar_delete( $user_id );	// delete old images if successful
+		$avatar = array();
 
-		$meta_value = array();
+		// Remove the user's existing avatar.
+		$this->avatar_delete( $user_id );
 
-		// set the new avatar
+		// The new avatar is an attachment ID.
 		if ( is_int( $url_or_media_id ) ) {
-			$meta_value['media_id'] = $url_or_media_id;
-			$url_or_media_id = wp_get_attachment_url( $url_or_media_id );
+			$avatar['media_id'] = (int) $url_or_media_id;
+			$url_or_media_id    = wp_get_attachment_url( $url_or_media_id );
 		}
 
-		$meta_value['full'] = $url_or_media_id;
+		// Store the media URL.
+		$avatar['full'] = esc_url( $url_or_media_id );
 
-		update_user_meta( $user_id, 'simple_local_avatar', $meta_value );	// save user information (overwriting old)
+		// Write the avatar data to user meta.
+		update_user_meta( $user_id, 'simple_local_avatar', $avatar );
 	}
 
 	/**

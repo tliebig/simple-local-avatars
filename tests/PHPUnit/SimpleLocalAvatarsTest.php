@@ -107,6 +107,8 @@ class SimpleLocalAvatarsTest extends TestCase {
 			 ),
 		) );
 
+		M::wpPassthruFunction( 'esc_url', array( 'times' => 1 ) );
+
 		$method->invoke( $instance, 'http://example.com/avatar.jpg', 123 );
 	}
 
@@ -132,6 +134,8 @@ class SimpleLocalAvatarsTest extends TestCase {
 				array( 'media_id' => 17, 'full' => 'http://example.com/image.jpg' )
 			 ),
 		) );
+
+		M::wpPassthruFunction( 'esc_url', array( 'times' => 1 ) );
 
 		$method->invoke( $instance, 17, 123 );
 	}
