@@ -87,6 +87,55 @@ class SimpleLocalAvatarsTest extends TestCase {
 		), $instance->sanitize_options( array() ) );
 	}
 
+	public function test_assign_new_user_avatar_with_url() {
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )
+			->shouldAllowMockingProtectedMethods()
+			->makePartial();
+		$instance->shouldReceive( 'avatar_delete' )
+			->once()
+			->with( 123 )
+			->andReturn( true );
+		$method   = new ReflectionMethod( $instance, 'assign_new_user_avatar' );
+		$method->setAccessible( true );
+
+		M::wpFunction( 'update_user_meta', array(
+			'times'  => 1,
+			'args'   => array(
+				123,
+				'simple_local_avatar',
+				array( 'full' => 'http://example.com/avatar.jpg' )
+			 ),
+		) );
+
+		$method->invoke( $instance, 'http://example.com/avatar.jpg', 123 );
+	}
+
+	public function test_assign_new_user_avatar_with_attachment_id() {
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )
+			->shouldAllowMockingProtectedMethods()
+			->makePartial();
+		$instance->shouldReceive( 'avatar_delete' );
+		$method   = new ReflectionMethod( $instance, 'assign_new_user_avatar' );
+		$method->setAccessible( true );
+
+		M::wpFunction( 'wp_get_attachment_url', array(
+			'times'  => 1,
+			'args'   => array( 17 ),
+			'return' => 'http://example.com/image.jpg',
+		) );
+
+		M::wpFunction( 'update_user_meta', array(
+			'times'  => 1,
+			'args'   => array(
+				123,
+				'simple_local_avatar',
+				array( 'media_id' => 17, 'full' => 'http://example.com/image.jpg' )
+			 ),
+		) );
+
+		$method->invoke( $instance, 17, 123 );
+	}
+
 	public function test_avatar_delete() {
 		$this->markTestIncomplete( 'Mock the filesystem' );
 		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
