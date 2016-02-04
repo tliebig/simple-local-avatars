@@ -54,28 +54,6 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Register hooks via the WordPress Plugin API.
-	 */
-	protected function add_hooks() {
-		add_action( 'admin_init', array( $this, 'admin_init' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'show_user_profile', array( $this, 'edit_user_profile' ) );
-		add_action( 'edit_user_profile', array( $this, 'edit_user_profile' ) );
-		add_action( 'personal_options_update', array( $this, 'edit_user_profile_update' ) );
-		add_action( 'edit_user_profile_update', array( $this, 'edit_user_profile_update' ) );
-		add_action( 'admin_action_remove-simple-local-avatar', array( $this, 'action_remove_simple_local_avatar' ) );
-		add_action( 'wp_ajax_assign_simple_local_avatar_media', array( $this, 'ajax_assign_simple_local_avatar_media' ) );
-		add_action( 'wp_ajax_remove_simple_local_avatar', array( $this, 'action_remove_simple_local_avatar' ) );
-		add_action( 'user_edit_form_tag', array( $this, 'user_edit_form_tag' ) );
-
-		add_filter( 'avatar_defaults', array( $this, 'avatar_defaults' ) );
-
-		if ( $this->get_setting( 'only', false ) ) {
-			add_filter( 'get_avatar', array( $this, 'get_avatar' ), 10, 5 );
-		}
-	}
-
-	/**
 	 * Retrieve the local avatar for a user who provided a user ID or email address.
 	 *
 	 * @param string            $avatar      Avatar returned by the original function.
@@ -491,36 +469,6 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Delete avatars based on a user_id
-	 *
-	 * @param int $user_id
-	 */
-	public function avatar_delete( $user_id ) {
-		$old_avatars = (array) get_user_meta( $user_id, 'simple_local_avatar', true );
-
-		if ( empty( $old_avatars ) )
-			return;
-
-		// if it was uploaded media, don't erase the full size or try to erase an the ID
-		if ( array_key_exists( 'media_id', $old_avatars ) )
-			unset( $old_avatars['media_id'], $old_avatars['full'] );
-
-		if ( ! empty( $old_avatars ) ) {
-			$upload_path = wp_upload_dir();
-
-			foreach ($old_avatars as $old_avatar ) {
-				// derive the path for the file based on the upload directory
-				$old_avatar_path = str_replace( $upload_path['baseurl'], $upload_path['basedir'], $old_avatar );
-				if ( file_exists( $old_avatar_path ) )
-					unlink( $old_avatar_path );
-			}
-		}
-
-		delete_user_meta( $user_id, 'simple_local_avatar' );
-		delete_user_meta( $user_id, 'simple_local_avatar_rating' );
-	}
-
-	/**
 	 * Creates a unique, meaningful file name for uploaded avatars.
 	 *
 	 * @param string $dir Path for file
@@ -566,5 +514,57 @@ class Simple_Local_Avatars {
 		}
 
 		delete_option( 'simple_local_avatars_caps' );
+	}
+
+	/**
+	 * Register hooks via the WordPress Plugin API.
+	 */
+	protected function add_hooks() {
+		add_action( 'admin_init', array( $this, 'admin_init' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_action( 'show_user_profile', array( $this, 'edit_user_profile' ) );
+		add_action( 'edit_user_profile', array( $this, 'edit_user_profile' ) );
+		add_action( 'personal_options_update', array( $this, 'edit_user_profile_update' ) );
+		add_action( 'edit_user_profile_update', array( $this, 'edit_user_profile_update' ) );
+		add_action( 'admin_action_remove-simple-local-avatar', array( $this, 'action_remove_simple_local_avatar' ) );
+		add_action( 'wp_ajax_assign_simple_local_avatar_media', array( $this, 'ajax_assign_simple_local_avatar_media' ) );
+		add_action( 'wp_ajax_remove_simple_local_avatar', array( $this, 'action_remove_simple_local_avatar' ) );
+		add_action( 'user_edit_form_tag', array( $this, 'user_edit_form_tag' ) );
+
+		add_filter( 'avatar_defaults', array( $this, 'avatar_defaults' ) );
+
+		if ( $this->get_setting( 'only', false ) ) {
+			add_filter( 'get_avatar', array( $this, 'get_avatar' ), 10, 5 );
+		}
+	}
+
+	/**
+	 * Delete avatars based on a user_id
+	 *
+	 * @param int $user_id
+	 */
+	protected function avatar_delete( $user_id ) {
+		$old_avatars = (array) get_user_meta( $user_id, 'simple_local_avatar', true );
+
+		if ( empty( $old_avatars ) )
+			return;
+
+		// if it was uploaded media, don't erase the full size or try to erase an the ID
+		if ( array_key_exists( 'media_id', $old_avatars ) )
+			unset( $old_avatars['media_id'], $old_avatars['full'] );
+
+		if ( ! empty( $old_avatars ) ) {
+			$upload_path = wp_upload_dir();
+
+			foreach ($old_avatars as $old_avatar ) {
+				// derive the path for the file based on the upload directory
+				$old_avatar_path = str_replace( $upload_path['baseurl'], $upload_path['basedir'], $old_avatar );
+				if ( file_exists( $old_avatar_path ) )
+					unlink( $old_avatar_path );
+			}
+		}
+
+		delete_user_meta( $user_id, 'simple_local_avatar' );
+		delete_user_meta( $user_id, 'simple_local_avatar_rating' );
 	}
 }
