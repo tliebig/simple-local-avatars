@@ -7,33 +7,60 @@
  */
 
 class Simple_Local_Avatars {
-	private $user_id_being_edited, $avatar_upload_error, $remove_nonce, $avatar_ratings;
-	public $options;
+	private $user_id_being_edited, $avatar_upload_error, $remove_nonce;
+
+	/**
+	 * Cache of the plugin options.
+	 * @var array $settings
+	 */
+	protected $settings;
+
+	/**
+	 * I18n-ready explanations of different ratings.
+	 * @var array $avatar_ratings
+	 */
+	protected $avatar_ratings;
 
 	/**
 	 * Set up the hooks and default values
 	 */
 	public function __construct() {
-		load_plugin_textdomain( 'simple-local-avatars', false, dirname( plugin_basename( __FILE__ ) ) . '/localization/' );
+		//load_plugin_textdomain( 'simple-local-avatars', false, dirname( plugin_basename( __FILE__ ) ) . '/localization/' );
 
-		$this->options = (array) get_option( 'simple_local_avatars' );
 		$this->avatar_ratings = array(
-			'G' => __('G &#8212; Suitable for all audiences'),
-			'PG' => __('PG &#8212; Possibly offensive, usually for audiences 13 and above'),
-			'R' => __('R &#8212; Intended for adult audiences above 17'),
-			'X' => __('X &#8212; Even more mature than above')
+			'G'  => __( 'G &#8212; Suitable for all audiences' ),
+			'PG' => __( 'PG &#8212; Possibly offensive, usually for audiences 13 and above' ),
+			'R'  => __( 'R &#8212; Intended for adult audiences above 17' ),
+			'X'  => __( 'X &#8212; Even more mature than above' )
 		);
 
-		// supplement remote avatars, but not if inside "local only" mode
-		if ( empty( $this->options['only'] ) )
-			add_filter( 'get_avatar', array( $this, 'get_avatar' ), 10, 5 );
+		$this->add_hooks();
+	}
 
+	/**
+	 * Load the stored settings from the options table.
+	 *
+	 * @param string $key     The setting name within the simple_local_avatars option.
+	 * @param mixed  $default Optional. The default value to return if $key is not found. Default
+	 *                        is null.
+	 * @return array The value of the 'simple_local_avatars' option.
+	 */
+	public function get_setting( $key, $default = null ) {
+		if ( ! $this->settings ) {
+			$this->settings = (array) get_option( 'simple_local_avatars' );
+		}
+
+		return isset( $this->settings[ $key ] ) ? $this->settings[ $key ] : $default;
+	}
+
+	/**
+	 * Register hooks via the WordPress Plugin API.
+	 */
+	protected function add_hooks() {
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
-
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'show_user_profile', array( $this, 'edit_user_profile' ) );
 		add_action( 'edit_user_profile', array( $this, 'edit_user_profile' ) );
-
 		add_action( 'personal_options_update', array( $this, 'edit_user_profile_update' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'edit_user_profile_update' ) );
 		add_action( 'admin_action_remove-simple-local-avatar', array( $this, 'action_remove_simple_local_avatar' ) );
@@ -42,6 +69,9 @@ class Simple_Local_Avatars {
 		add_action( 'user_edit_form_tag', array( $this, 'user_edit_form_tag' ) );
 
 		add_filter( 'avatar_defaults', array( $this, 'avatar_defaults' ) );
+		if ( $this->get_setting( 'only', false ) ) {
+			add_filter( 'get_avatar', array( $this, 'get_avatar' ), 10, 5 );
+		}
 	}
 
 	/**
@@ -201,12 +231,12 @@ class Simple_Local_Avatars {
 			'desc'	=> '',
 		) );
 
-		if ( empty( $this->options[$args['key']] ) )
-			$this->options[$args['key']] = 0;
+		if ( empty( $this->settings[$args['key']] ) )
+			$this->settings[$args['key']] = 0;
 
 		echo '
 			<label for="simple-local-avatars-' . $args['key'] . '">
-				<input type="checkbox" name="simple_local_avatars[' . $args['key'] . ']" id="simple-local-avatars-' . $args['key'] . '" value="1" ' . checked( $this->options[$args['key']], 1, false ) . ' />
+				<input type="checkbox" name="simple_local_avatars[' . $args['key'] . ']" id="simple-local-avatars-' . $args['key'] . '" value="1" ' . checked( $this->settings[$args['key']], 1, false ) . ' />
 				' . __($args['desc'],'simple-local-avatars') . '
 			</label>
 		';
@@ -234,7 +264,7 @@ class Simple_Local_Avatars {
 			<td>
 			<?php
 				if ( ! $upload_rights = current_user_can('upload_files') )
-					$upload_rights = empty( $this->options['caps'] );
+					$upload_rights = empty( $this->settings['caps'] );
 
 				if ( $upload_rights ) {
 					do_action( 'simple_local_avatar_notices' );
