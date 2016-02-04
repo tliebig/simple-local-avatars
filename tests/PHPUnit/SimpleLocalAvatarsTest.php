@@ -56,4 +56,35 @@ class SimpleLocalAvatarsTest extends TestCase {
 		$method->invoke( $instance );
 	}
 
+	public function test_sanitize_options() {
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
+
+		$this->assertEquals( array(
+			'caps' => 1,
+			'only' => 1,
+		), $instance->sanitize_options( array(
+			'caps' => true,
+			'only' => 'foo',
+		) ) );
+
+		$this->assertEquals( array(
+			'caps' => 1,
+			'only' => 0,
+		), $instance->sanitize_options( array(
+			'caps' => true,
+		) ) );
+
+		$this->assertEquals( array(
+			'caps' => 0,
+			'only' => 1,
+		), $instance->sanitize_options( array(
+			'only' => 'bar',
+		) ) );
+
+		$this->assertEquals( array(
+			'caps' => 0,
+			'only' => 0,
+		), $instance->sanitize_options( array() ) );
+	}
+
 }
