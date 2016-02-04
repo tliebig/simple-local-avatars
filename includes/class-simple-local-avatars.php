@@ -209,15 +209,16 @@ class Simple_Local_Avatars {
 	}
 
 	/**
-	 * Sanitize new settings field before saving
+	 * Sanitize new settings field before saving.
 	 *
-	 * @param array|string $input Passed input values to sanitize
-	 * @return array|string Sanitized input fields
+	 * @param array $input Passed input values to sanitize.
+	 * @return array Sanitized input fields.
 	 */
 	public function sanitize_options( $input ) {
-		$new_input['caps'] = empty( $input['caps'] ) ? 0 : 1;
-		$new_input['only'] = empty( $input['only'] ) ? 0 : 1;
-		return $new_input;
+		return array(
+			'caps' => (int) ! empty( $input['caps'] ),
+			'only' => (int) ! empty( $input['only'] ),
+		);
 	}
 
 	/**
