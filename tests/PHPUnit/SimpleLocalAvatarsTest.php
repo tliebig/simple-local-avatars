@@ -87,6 +87,60 @@ class SimpleLocalAvatarsTest extends TestCase {
 		), $instance->sanitize_options( array() ) );
 	}
 
+	public function test_avatar_delete() {
+		$this->markTestIncomplete( 'Mock the filesystem' );
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
+		$method   = new ReflectionMethod( $instance, 'avatar_delete' );
+		$method->setAccessible( true );
+
+		M::wpFunction( 'get_user_meta', array(
+			'times'  => 1,
+			'args'   => array( 123, 'simple_local_avatar', true ),
+			'return' => array( 'full' => 'http://example.com/avatar.jpg' ),
+		) );
+
+		M::wpFunction( 'wp_upload_dir', array(
+			'times'  => 1,
+			'return' => array(
+				'baseurl' => null,
+				'basedir' => null,
+			),
+		) );
+
+		M::wpFunction( 'delete_user_meta', array(
+			'times'  => 1,
+			'args'   => array( 123, 'simple_local_avatar' ),
+		) );
+
+		M::wpFunction( 'delete_user_meta', array(
+			'times'  => 1,
+			'args'   => array( 123, 'simple_local_avatar_rating' ),
+		) );
+
+		$method->invoke( $instance, 123 );
+	}
+
+	public function test_avatar_delete_dont_remove_attachments() {
+		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
+		$method   = new ReflectionMethod( $instance, 'avatar_delete' );
+		$method->setAccessible( true );
+
+		M::wpFunction( 'get_user_meta', array(
+			'times'  => 1,
+			'args'   => array( 123, 'simple_local_avatar', true ),
+			'return' => array(
+				'media_id' => 17,
+				'full' => 'http://example.com/avatar.jpg',
+			),
+		) );
+
+		M::wpFunction( 'delete_user_meta', array(
+			'times'  => 2,
+		) );
+
+		$method->invoke( $instance, 123 );
+	}
+
 	public function test_upgrade_pre_2_0() {
 		$instance = Mockery::mock( '\Simple_Local_Avatars' )->makePartial();
 
