@@ -63,6 +63,15 @@ class Simple_Local_Avatars {
 	 * @return string <img> tag for the user's avatar
 	 */
 	public function get_avatar( $avatar = '', $id_or_email = '', $size = 96, $default = '', $alt = '' ) {
+
+		// add a simple cache to speed up loading on large sites
+		if ( empty($this->cached_avatars) ) :
+			$this->cached_avatars = get_site_transient('avatar_cache');
+		endif;
+		if ( isset($this->cached_avatars[$id_or_email][$size]) ) :
+			return apply_filters( 'simple_local_avatar', $this->cached_avatars[$id_or_email][$size] );
+		endif;
+
 		if ( is_numeric( $id_or_email ) )
 			$user_id = (int) $id_or_email;
 		elseif ( is_string( $id_or_email ) && ( $user = get_user_by( 'email', $id_or_email ) ) )
@@ -75,8 +84,11 @@ class Simple_Local_Avatars {
 
 		// fetch local avatar from meta and make sure it's properly ste
 		$local_avatars = get_user_meta( $user_id, 'simple_local_avatar', true );
-		if ( empty( $local_avatars['full'] ) )
+		if ( empty( $local_avatars['full'] ) ) :
+			$this->cached_avatars[$id_or_email][$size] = $avatar;
+			set_site_transient('avatar_cache', $this->cached_avatars, 60*60*12);
 			return $avatar;
+		endif;
 
 		// check rating
 		$avatar_rating = get_user_meta( $user_id, 'simple_local_avatar_rating', true );
@@ -84,8 +96,11 @@ class Simple_Local_Avatars {
 			$ratings = array_keys( $this->avatar_ratings );
 			$site_rating_weight = array_search( $site_rating, $ratings );
 			$avatar_rating_weight = array_search( $avatar_rating, $ratings );
-			if ( false !== $avatar_rating_weight && $avatar_rating_weight > $site_rating_weight )
+			if ( false !== $avatar_rating_weight && $avatar_rating_weight > $site_rating_weight ) :
+				$this->cached_avatars[$id_or_email][$size] = $avatar;
+				set_site_transient('avatar_cache', $this->cached_avatars, 60*60*12);
 				return $avatar;
+			endif;
 		}
 
 		// handle "real" media
@@ -96,6 +111,8 @@ class Simple_Local_Avatars {
 				if ( is_user_logged_in() )
 					$this->avatar_delete( $user_id );
 
+				$this->cached_avatars[$id_or_email][$size] = $avatar;
+				set_site_transient('avatar_cache', $this->cached_avatars, 60*60*12);
 				return $avatar;
 			}
 		}
@@ -104,7 +121,25 @@ class Simple_Local_Avatars {
 			
 		if ( empty( $alt ) )
 			$alt = get_the_author_meta( 'display_name', $user_id );
+
 			
+		// double-check if thumb file exists for requested size
+		foreach ( $local_avatars as $registered_thumb_size => $file_url ) :
+			if ($registered_thumb_size == "full")
+				continue;
+
+			// remove local avatar url if it does not contain the right size suffix
+			$file_name = basename($file_url);
+			$local_file_path = untrailingslashit(ABSPATH) . wp_make_link_relative($file_url);
+			if ( !stristr( $file_name, "-" . $registered_thumb_size) AND !stristr( $file_name, "x" . $registered_thumb_size) ) :
+				unset($local_avatars[$registered_thumb_size]);
+			elseif ( !file_exists($local_file_path) ) :
+				unset($local_avatars[$registered_thumb_size]);
+			endif;
+
+		endforeach;
+
+
 		// generate a new size
 		if ( ! array_key_exists( $size, $local_avatars ) ) {
 			$local_avatars[$size] = $local_avatars['full']; // just in case of failure elsewhere
@@ -121,12 +156,24 @@ class Simple_Local_Avatars {
 				// generate the new size
 				$editor = wp_get_image_editor( $avatar_full_path );
 				if ( ! is_wp_error( $editor ) ) {
+					if ( $size > $editor->get_size()['width'] AND $size > $editor->get_size()['width'] ) {
+						$local_avatars[$size] = $local_avatars['full'];
+
+						$avatar = "<img alt='" . esc_attr( $alt ) . "' src='" . esc_url( $local_avatars[$size] ) . "' class='avatar avatar-{$size}{$author_class} photo' height='{$size}' width='{$size}' {$args['extra_attr']}/>";
+						$this->cached_avatars[$id_or_email][$size] = $avatar;
+						set_site_transient('avatar_cache', $this->cached_avatars, 60*60*12);
+						return apply_filters( 'simple_local_avatar', $avatar );
+					}
+
 					$resized = $editor->resize( $size, $size, true );
 					if ( ! is_wp_error( $resized ) ) {
 						$dest_file = $editor->generate_filename();
 						$saved = $editor->save( $dest_file );
 						if ( ! is_wp_error( $saved ) )
 							$local_avatars[$size] = str_replace( $upload_path['basedir'], $upload_path['baseurl'], $dest_file );
+
+							// added for multisite compatibility
+							$local_avatars[$size] = trailingslashit( dirname($local_avatars['full']) ) . basename($dest_file);
 					}
 				}
 
@@ -142,6 +189,11 @@ class Simple_Local_Avatars {
 		$author_class = is_author( $user_id ) ? ' current-author' : '' ;
 		$avatar = "<img alt='" . esc_attr( $alt ) . "' src='" . esc_url( $local_avatars[$size] ) . "' class='avatar avatar-{$size}{$author_class} photo' height='{$size}' width='{$size}' />";
 		
+
+		$this->cached_avatars[$id_or_email][$size] = $avatar;
+		set_site_transient('avatar_cache', $this->cached_avatars, 60*60*12);
+
+
 		return apply_filters( 'simple_local_avatar', $avatar );
 	}
 	
